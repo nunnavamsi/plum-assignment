@@ -65,11 +65,14 @@ This modular pipeline makes the logic easy to extend and validate.
 POST /extract/text
 
 ### Example Request
+```json
 {
   "text": "Total INR 1200 Paid 1000 Due 200"
 }
+```
 
 ### Example Response
+```json
 {
   "currency": "INR",
   "amounts": [
@@ -79,7 +82,7 @@ POST /extract/text
   ],
   "status": "ok"
 }
-
+```
 ---
 
 ## Sample curl Request
