@@ -7,18 +7,9 @@ values, classifies them based on context (total, paid, due), and returns structu
 JSON output.
 
 ---
-
-## Tech Stack
-- Python 3.11
-- FastAPI
-- Uvicorn
-
----
-# Plum Assignment – Backend API
+# AI-Powered Amount Detection in Medical Documents – Backend API
 
 Short description of what the backend does.
-
-## Live Demo   ← ADD THIS SECTION HERE (IMPORTANT)
 
 The backend is running locally and exposed using ngrok.
 
@@ -30,6 +21,13 @@ https://marielle-inviolable-javier.ngrok-free.dev/docs
 
 Note: On first visit, ngrok may show a standard warning page.
 Click "Visit Site" to continue.
+
+---
+
+## Tech Stack
+- Python 3.11
+- FastAPI
+- Uvicorn
 
 ---
 
