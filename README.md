@@ -9,8 +9,6 @@ JSON output.
 ---
 ## Live Demo
 
-Short description of what the backend does.
-
 The backend is running locally and exposed using ngrok.
 
 Base URL:
@@ -117,5 +115,6 @@ curl -X POST http://127.0.0.1:8000/extract/text \
 -d '{"text":"Total INR 1200 Paid 1000 Due 200"}'
 ``` 
 ---
+
 
 
