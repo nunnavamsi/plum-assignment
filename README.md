@@ -45,6 +45,7 @@ http://127.0.0.1:8000/docs
 
 ## Architecture
 The system follows a simple step-by-step processing pipeline:
+```text
 Input Text
    ↓
 Numeric Token Extraction
@@ -54,6 +55,7 @@ Normalization
 Context Classification (Total / Paid / Due)
    ↓
 Structured JSON Output
+```
 This modular pipeline makes the logic easy to extend and validate.
 
 ---
