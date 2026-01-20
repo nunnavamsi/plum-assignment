@@ -26,15 +26,22 @@ JSON output.
 1. Install dependencies:
 ```bash
 py -m pip install fastapi uvicorn
+```
+
+---
 
 ## Start the server:
 ```bash
 py -m uvicorn main:app --reload
+``` 
 
+---
 
 ## Open browser and visit:
 ```text
 http://127.0.0.1:8000/docs
+``` 
+---
 
 ## Architecture
 The system follows a simple step-by-step processing pipeline:
@@ -48,6 +55,8 @@ Context Classification (Total / Paid / Due)
    ↓
 Structured JSON Output
 This modular pipeline makes the logic easy to extend and validate.
+
+---
 
 ## API Usage Example
 ### Endpoint
@@ -68,3 +77,15 @@ POST /extract/text
   ],
   "status": "ok"
 }
+
+---
+
+## Sample curl Request
+
+You can test the API using the following curl command:
+```bash
+curl -X POST http://127.0.0.1:8000/extract/text \
+-H "Content-Type: application/json" \
+-d '{"text":"Total INR 1200 Paid 1000 Due 200"}'
+``` 
+---
