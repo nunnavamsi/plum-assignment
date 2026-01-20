@@ -1,4 +1,4 @@
-# AI-Powered Amount Detection in Medical Documents
+   # AI-Powered Amount Detection in Medical Documents
 
 ## Overview
 This project is a backend API built using FastAPI that extracts financial amounts
@@ -94,3 +94,4 @@ curl -X POST http://127.0.0.1:8000/extract/text \
 -d '{"text":"Total INR 1200 Paid 1000 Due 200"}'
 ``` 
 ---
+
