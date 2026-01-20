@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
+from guardrails import check_guardrails
 
 app = FastAPI(
     title="AI-Powered Amount Detection in Medical Documents",
@@ -14,28 +15,28 @@ def home():
     return {"message": "Server is running"}
 
 import re
+
+def extract_numbers_from_text(text: str):
+    return re.findall(r"\d+", text)
+
 @app.post("/extract/text")
 def extract_text(data: TextInput):
-    text = data.text
+    try:
+        text = data.text
+        numbers = extract_numbers_from_text(text)
 
-    return {
-        "currency": "INR",
-        "amounts": [
-            {
-                "type": "total_bill",
-                "value": 1200,
-                "source": "text: 'Total: INR 1200'"
-            },
-            {
-                "type": "paid",
-                "value": 1000,
-                "source": "text: 'Paid: 1000'"
-            },
-            {
-                "type": "due",
-                "value": 200,
-                "source": "text: 'Due: 200'"
-            }
-        ],
-        "status": "ok"
-    }
+        guardrail_response = check_guardrails(text, numbers)
+        if guardrail_response:
+            return guardrail_response
+
+        return {
+            "currency": "INR",
+            "raw_numbers": numbers,
+            "status": "ok"
+        }
+
+    except Exception:
+        return {
+            "status": "no_amounts_found",
+            "reason": "internal extraction error"
+        }
