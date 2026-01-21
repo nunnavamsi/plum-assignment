@@ -1,24 +1,23 @@
-#           AI-Powered Amount Detection in Medical Documents
+# AI-Powered Amount Detection in Medical Documents
 
 ## Overview
-This project is a backend API built using FastAPI that extracts financial amounts
-from medical bills or receipts provided as text input. The API identifies numeric
-values, classifies them based on context (total, paid, due), and returns structured
-JSON output.
+This project is a backend API built using **FastAPI** that extracts financial amounts from medical bills or receipts.  
+The system handles OCR noise, normalizes numeric values, classifies amounts by context (total, paid, due), and returns **structured, auditable JSON output**.
+
+The API is designed to expose **each processing step independently** for evaluation clarity while maintaining a clean end-to-end pipeline.
 
 ---
+
 ## Live Demo
+The backend is running locally and exposed using **ngrok**.
 
-The backend is running locally and exposed using ngrok.
+**Base URL:**  
+https://marielle-inviolable-javier.ngrok-free.dev  
 
-Base URL:
-https://marielle-inviolable-javier.ngrok-free.dev
+**Swagger UI:**  
+https://marielle-inviolable-javier.ngrok-free.dev/docs  
 
-Swagger UI:
-https://marielle-inviolable-javier.ngrok-free.dev/docs
-
-Note: On first visit, ngrok may show a standard warning page.
-Click "Visit Site" to continue.
+> Note: On first visit, ngrok may show a standard warning page. Click **"Visit Site"** to continue.
 
 ---
 
@@ -27,124 +26,171 @@ Click "Visit Site" to continue.
 - FastAPI
 - Uvicorn
 - OpenAI API
-- Pydantic
-- pytesseract & Pillow (OCR-ready)
+- Pydantic  
+- Regex-based OCR normalization  
+- OCR-ready (pytesseract & Pillow compatible)
+
 ---
 
 ## Features
-- Text-based numeric extraction
-- AI-assisted amount reasoning and validation
-- Guardrails for empty or noisy documents
-- FastAPI-based backend with interactive Swagger UI
+- OCR-aware numeric extraction
+- Robust OCR error normalization
+- Context-based amount classification (Total / Paid / Due)
+- AI-assisted amount validation
+- Guardrails for noisy or invalid documents
+- Step-by-step API design for evaluation
+- Interactive Swagger UI
 
----
-
-## Setup Instructions
-
-### Prerequisites
-- Python 3.11 installed
-- pip package manager
-
-### Steps to Run Locally
-
-1. Install dependencies:
-```bash
-py -m pip install fastapi uvicorn
-```
-
----
-
-## Start the server:
-```bash
-py -m uvicorn main:app --reload
-``` 
-
----
-
-## Open browser and visit:
-```text
-http://127.0.0.1:8000/docs
-``` 
 ---
 
 ## Architecture
-The system follows a simple step-by-step processing pipeline:
+The system follows a **clear, modular pipeline**:
+
 ```text
-Input (Text / Image)
+Input (Text / OCR Output)
         ↓
-Shared Guardrails Layer
+Guardrails Layer
         ↓
-Numeric Extraction Module
+Raw Token Extraction (Step 1)
         ↓
-AI Reasoning (FILTER)
+Numeric Normalization (Step 2)
         ↓
-AI Validation (APPROVE)
+Context Classification (Step 3)
         ↓
-Structured JSON Output
+Final Output with Provenance (Step 4)
 ```
-This modular pipeline makes the logic easy to extend and validate.
+Each step is independently testable through a dedicated API endpoint.
 
 ---
 
-## API Usage Example
-### Endpoint
+## API Endpoints (Evaluation-Friendly)
+Step	       Endpoint	                  Description
+Step 1	POST /extract/text	      OCR + raw numeric token extraction
+Step 2	POST /extract/normalized	OCR correction & numeric normalization
+Step 3	POST /extract/classified	Context-based classification
+Step 4	POST /extract/final	      Final structured output with provenance
+
+---
+
+## Step 1 – OCR / Text Extraction
+### Endpoint:
 POST /extract/text
 
-### Example Request
+### Request
 ```json
 {
-  "text": "Total INR 1200 Paid 1000 Due 200"
+  "text": "T0tal: Rs l200 | Pald: 1000 | Due: 200 | Discount: 10%"
 }
 ```
 
-### Example Response
+### Response
+```json
+{
+  "raw_tokens": ["1200", "1000", "200", "10%"],
+  "currency_hint": "INR",
+  "confidence": 0.74
+}
+```
+
+## Step 2 – Normalization
+
+### Endpoint:
+POST /extract/normalized
+
+### Response
+```json
+{
+  "normalized_amounts": [1200, 1000, 200],
+  "normalization_confidence": 0.82
+}
+```
+
+## Step 3 – Classification by Context
+
+### Endpoint:
+POST /extract/classified
+
+### Response
+```json
+{
+  "amounts": [
+    {"type": "total_bill", "value": 1200},
+    {"type": "paid", "value": 1000},
+    {"type": "due", "value": 200}
+  ],
+  "confidence": 0.80
+}
+```
+
+## Step 4 – Final Output with Provenance
+
+### Endpoint:
+POST /extract/final
+
+### Response
 ```json
 {
   "currency": "INR",
   "amounts": [
-    { "type": "total_bill", "value": 1200 },
-    { "type": "paid", "value": 1000 },
-    { "type": "due", "value": 200 }
+    {"type": "total_bill", "value": 1200, "source": "text: 'Total: INR 1200'"},
+    {"type": "paid", "value": 1000, "source": "text: 'Paid: 1000'"},
+    {"type": "due", "value": 200, "source": "text: 'Due: 200'"}
   ],
   "status": "ok"
 }
 ```
----
 
-## Sample curl Request(curl & Postman)
+## Guardrails
+If the document is empty or too noisy:
 
-You can test the API using the following curl command:
-### curl – Text Extraction
-```bash
+{
+  "status": "no_amounts_found",
+  "reason": "document too noisy"
+}
+Setup Instructions
+Prerequisites
+Python 3.11
+
+pip package manager
+
+Run Locally
+Install dependencies:
+
+bash
+Copy code
+pip install fastapi uvicorn
+Start the server:
+
+bash
+Copy code
+uvicorn main:app --reload
+Open Swagger UI:
+
+arduino
+Copy code
+http://127.0.0.1:8000/docs
+Sample cURL Request
+bash
+Copy code
 curl -X POST http://127.0.0.1:8000/extract/text \
 -H "Content-Type: application/json" \
 -d '{"text":"Total INR 1200 Paid 1000 Due 200"}'
-```
-### Postman
-Method: POST
+Design Notes
+Each processing step is exposed as a separate endpoint for evaluation clarity.
 
-URL: http://127.0.0.1:8000/extract/text
+Steps 3 and 4 share internal logic but return different outputs as required by the problem statement.
 
-Headers: Content-Type: application/json
+The system is extensible to OCR image inputs with minimal changes.
 
-Body (raw / JSON):
-```json
-{
-"text": "Total INR 1200 Paid 1000 Due 200"
-}
-```
-Expected Response:
-```json
-{
-"currency": "INR",
-"raw_numbers": ["1200", "1000", "200"],
-"status": "ok"
-}
-```
----
+Conclusion
+This project demonstrates:
 
+OCR-aware data extraction
 
+Robust numeric normalization
 
+Context-based classification
 
+Clean, auditable API design
 
-
+Practical backend engineering for real-world documents
