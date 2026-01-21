@@ -15,4 +15,3 @@ def check_guardrails(text: str, tokens: list):
         }
 
     return None
-
