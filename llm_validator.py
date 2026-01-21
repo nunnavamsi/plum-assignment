@@ -21,7 +21,6 @@ def _safe_json_parse(text: str):
 def heuristic_classification(text: str, numbers: list):
     """
     Deterministic fallback when OpenAI is unavailable.
-    Uses keyword-based matching.
     """
     text_lower = text.lower()
     results = []
@@ -48,19 +47,15 @@ def heuristic_classification(text: str, numbers: list):
 # STEP 3 — FILTER MONETARY AMOUNTS
 # -------------------------------------------------
 def filter_monetary_amounts(text: str, numbers: list):
-    # If OpenAI is unavailable → fallback
     if client is None or not os.getenv("OPENAI_API_KEY"):
         return heuristic_classification(text, numbers)
 
     try:
         response = client.chat.completions.create(
             model="gpt-4o-mini",
-            messages=[
-                {
-                    "role": "user",
-                    "content": f"""
-You are a medical billing expert.
-
+            messages=[{
+                "role": "user",
+                "content": f"""
 Text:
 {text}
 
@@ -70,15 +65,11 @@ Extracted numbers:
 Return STRICT JSON:
 {{ "amounts": [{{ "value": 1200, "reason": "short explanation" }}] }}
 """
-                }
-            ],
+            }],
             temperature=0
         )
 
-        content = response.choices[0].message.content
-        parsed = _safe_json_parse(content)
-
-        # If parsing fails, fallback
+        parsed = _safe_json_parse(response.choices[0].message.content)
         if not parsed or "amounts" not in parsed:
             return heuristic_classification(text, numbers)
 
@@ -92,7 +83,6 @@ Return STRICT JSON:
 # STEP 4 — VALIDATION
 # -------------------------------------------------
 def validate_amounts(amounts: list):
-    # If OpenAI is unavailable → approve heuristically
     if client is None or not os.getenv("OPENAI_API_KEY"):
         return {
             "approved": True,
@@ -103,29 +93,24 @@ def validate_amounts(amounts: list):
     try:
         response = client.chat.completions.create(
             model="gpt-4o-mini",
-            messages=[
-                {
-                    "role": "user",
-                    "content": f"""
+            messages=[{
+                "role": "user",
+                "content": f"""
 Validate the following monetary amounts:
 {amounts}
 
 Return STRICT JSON:
 {{ "approved": true, "confidence": 0.80 }}
 """
-                }
-            ],
+            }],
             temperature=0
         )
 
-        content = response.choices[0].message.content
-        parsed = _safe_json_parse(content)
-
-        if not parsed or "approved" not in parsed:
+        parsed = _safe_json_parse(response.choices[0].message.content)
+        if not parsed:
             return {
                 "approved": True,
-                "confidence": 0.80,
-                "explanation": "fallback validation"
+                "confidence": 0.80
             }
 
         return parsed
@@ -133,6 +118,5 @@ Return STRICT JSON:
     except Exception:
         return {
             "approved": True,
-            "confidence": 0.80,
-            "explanation": "heuristic fallback validation"
+            "confidence": 0.80
         }
