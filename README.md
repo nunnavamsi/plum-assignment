@@ -51,13 +51,14 @@ Input (Text / OCR Output)
         ↓
 Guardrails Layer
         ↓
-Raw Token Extraction (Step 1)
+Raw Token Extraction 
         ↓
-Numeric Normalization (Step 2)
+Numeric Normalization 
         ↓
-Context Classification (Step 3)
+Context Classification 
         ↓
-Final Output with Provenance (Step 4)
+Final Output with Provenance 
+
 ```
 Each step is independently testable through a dedicated API endpoint.
 
@@ -142,55 +143,58 @@ POST /extract/final
 
 ## Guardrails
 If the document is empty or too noisy:
-
+```json
 {
   "status": "no_amounts_found",
   "reason": "document too noisy"
 }
-Setup Instructions
-Prerequisites
-Python 3.11
+```
+## Setup Instructions
 
-pip package manager
+### Prerequisites
 
-Run Locally
+- Python 3.11
+- pip package manager
+
+### Run Locally
+
 Install dependencies:
-
-bash
-Copy code
+```json
 pip install fastapi uvicorn
+```
 Start the server:
-
-bash
-Copy code
+```json
 uvicorn main:app --reload
+```
 Open Swagger UI:
-
-arduino
-Copy code
+```text
 http://127.0.0.1:8000/docs
-Sample cURL Request
-bash
-Copy code
+```
+
+## Sample cURL Request
+```json
 curl -X POST http://127.0.0.1:8000/extract/text \
 -H "Content-Type: application/json" \
 -d '{"text":"Total INR 1200 Paid 1000 Due 200"}'
-Design Notes
-Each processing step is exposed as a separate endpoint for evaluation clarity.
+```
 
-Steps 3 and 4 share internal logic but return different outputs as required by the problem statement.
+## Design Notes
 
-The system is extensible to OCR image inputs with minimal changes.
+- Each processing step is exposed as a separate endpoint for evaluation clarity.
 
-Conclusion
+- Steps 3 and 4 share internal logic but return different outputs as required by the problem statement.
+
+- The system is extensible to OCR image inputs with minimal changes.
+
+## Conclusion
 This project demonstrates:
 
-OCR-aware data extraction
+- OCR-aware data extraction
 
-Robust numeric normalization
+- Robust numeric normalization
 
-Context-based classification
+- Context-based classification
 
-Clean, auditable API design
+- Clean, auditable API design
 
-Practical backend engineering for real-world documents
+- Practical backend engineering for real-world documents
