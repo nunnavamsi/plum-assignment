@@ -1,34 +1,46 @@
 import json
+import os
 from openai import OpenAI
 
-# Initialize OpenAI client
-client = OpenAI()
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+
+def _safe_json_parse(text: str):
+    """
+    Safely parse JSON from LLM output.
+    Strips markdown, handles empty responses.
+    """
+    if not text:
+        raise ValueError("LLM returned empty response")
+
+    # Remove markdown code fences if present
+    text = text.strip()
+    if text.startswith("```"):
+        text = text.split("```")[1]
+
+    return json.loads(text)
 
 
 def filter_monetary_amounts(text: str, numbers: list):
-    """
-    FILTER stage (GFA):
-    Use LLM reasoning to identify which numbers are monetary amounts.
-    """
     prompt = f"""
-    You are a medical billing analyst.
+You are a medical billing analyst.
 
-    Text:
-    {text}
+Text:
+{text}
 
-    Extracted Numbers:
-    {numbers}
+Extracted Numbers:
+{numbers}
 
-    Identify which numbers represent monetary amounts.
-    Ignore dates, IDs, phone numbers.
+Identify which numbers represent monetary amounts.
+Ignore dates, IDs, phone numbers.
 
-    Return JSON only:
-    {{
-        "amounts": [
-            {{ "value": "number", "reason": "short explanation" }}
-        ]
-    }}
-    """
+Return STRICT JSON only (no text, no markdown):
+{{
+  "amounts": [
+    {{ "value": 123, "reason": "short explanation" }}
+  ]
+}}
+"""
 
     response = client.chat.completions.create(
         model="gpt-4o-mini",
@@ -36,31 +48,24 @@ def filter_monetary_amounts(text: str, numbers: list):
         temperature=0
     )
 
-    return json.loads(response.choices[0].message.content)
+    content = response.choices[0].message.content
+    return _safe_json_parse(content)
 
 
 def validate_amounts(amounts: list):
-    """
-    APPROVE stage (GFA):
-    Validate extracted monetary amounts and assign confidence.
-    """
     prompt = f"""
-    Validate the following extracted monetary amounts from a medical bill.
+Validate the following extracted monetary amounts from a medical bill.
 
-    Amounts:
-    {amounts}
+Amounts:
+{amounts}
 
-    Check:
-    - Internal consistency
-    - Likelihood of being final payable amount
-
-    Return JSON only:
-    {{
-        "approved": true/false,
-        "confidence": 0-1,
-        "explanation": "short explanation"
-    }}
-    """
+Return STRICT JSON only (no text, no markdown):
+{{
+  "approved": true,
+  "confidence": 0.85,
+  "explanation": "short explanation"
+}}
+"""
 
     response = client.chat.completions.create(
         model="gpt-4o-mini",
@@ -68,4 +73,5 @@ def validate_amounts(amounts: list):
         temperature=0
     )
 
-    return json.loads(response.choices[0].message.content)
+    content = response.choices[0].message.content
+    return _safe_json_parse(content)
