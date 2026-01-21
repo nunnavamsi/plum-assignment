@@ -32,9 +32,10 @@ Click "Visit Site" to continue.
 ---
 
 ## Features
-- Text extraction
-- Amount classification
-- FastAPI backend
+- Text-based numeric extraction
+- AI-assisted amount reasoning and validation
+- Guardrails for empty or noisy documents
+- FastAPI-based backend with interactive Swagger UI
 
 ---
 
@@ -141,6 +142,7 @@ Expected Response:
 }
 ```
 ---
+
 
 
 
