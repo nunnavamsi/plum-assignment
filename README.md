@@ -140,6 +140,7 @@ POST /extract/final
   "status": "ok"
 }
 ```
+---
 
 ## Guardrails
 If the document is empty or too noisy:
@@ -149,6 +150,8 @@ If the document is empty or too noisy:
   "reason": "document too noisy"
 }
 ```
+---
+
 ## Setup Instructions
 
 ### Prerequisites
@@ -170,6 +173,7 @@ Open Swagger UI:
 ```text
 http://127.0.0.1:8000/docs
 ```
+---
 
 ## Sample cURL Request
 ```json
@@ -177,6 +181,7 @@ curl -X POST http://127.0.0.1:8000/extract/text \
 -H "Content-Type: application/json" \
 -d '{"text":"Total INR 1200 Paid 1000 Due 200"}'
 ```
+---
 
 ## Design Notes
 
@@ -185,6 +190,8 @@ curl -X POST http://127.0.0.1:8000/extract/text \
 - Steps 3 and 4 share internal logic but return different outputs as required by the problem statement.
 
 - The system is extensible to OCR image inputs with minimal changes.
+
+--- 
 
 ## Conclusion
 This project demonstrates:
@@ -198,3 +205,5 @@ This project demonstrates:
 - Clean, auditable API design
 
 - Practical backend engineering for real-world documents
+
+---
