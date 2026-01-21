@@ -64,12 +64,14 @@ Each step is independently testable through a dedicated API endpoint.
 
 ---
 
-## API Endpoints (Evaluation-Friendly)
-Step	       Endpoint	                  Description
-Step 1	POST /extract/text	      OCR + raw numeric token extraction
-Step 2	POST /extract/normalized	OCR correction & numeric normalization
-Step 3	POST /extract/classified	Context-based classification
-Step 4	POST /extract/final	      Final structured output with provenance
+## API Endpoints 
+| Step | Endpoint | Description |
+|------|----------|-------------|
+| Step 1 | POST `/extract/text` | OCR + raw numeric token extraction |
+| Step 2 | POST `/extract/normalized` | OCR correction & numeric normalization |
+| Step 3 | POST `/extract/classified` | Context-based classification |
+| Step 4 | POST `/extract/final` | Final structured output with provenance |
+
 
 
 ## Step 1 – OCR / Text Extraction
