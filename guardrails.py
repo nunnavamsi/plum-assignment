@@ -1,4 +1,9 @@
-def check_guardrails(text, numbers):
+# guardrails.py
+def check_guardrails(text: str, numbers: list):
+    """
+    Guardrails to prevent unsafe or meaningless processing.
+    """
+
     if not text or text.strip() == "":
         return {
             "status": "no_amounts_found",
