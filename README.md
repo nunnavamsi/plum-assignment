@@ -74,18 +74,18 @@ Each step is independently testable through a dedicated API endpoint.
 
 
 
-## Step 1 – OCR / Text Extraction
-### Endpoint:
+### Step 1 – OCR / Text Extraction
+####  Endpoint:
 POST /extract/text
 
-### Request
+#### Request
 ```json
 {
   "text": "T0tal: Rs l200 | Pald: 1000 | Due: 200 | Discount: 10%"
 }
 ```
 
-### Response
+#### Response
 ```json
 {
   "raw_tokens": ["1200", "1000", "200", "10%"],
@@ -94,12 +94,12 @@ POST /extract/text
 }
 ```
 
-## Step 2 – Normalization
+### Step 2 – Normalization
 
-### Endpoint:
+#### Endpoint:
 POST /extract/normalized
 
-### Response
+#### Response
 ```json
 {
   "normalized_amounts": [1200, 1000, 200],
@@ -107,12 +107,12 @@ POST /extract/normalized
 }
 ```
 
-## Step 3 – Classification by Context
+### Step 3 – Classification by Context
 
-### Endpoint:
+#### Endpoint:
 POST /extract/classified
 
-### Response
+#### Response
 ```json
 {
   "amounts": [
@@ -124,12 +124,12 @@ POST /extract/classified
 }
 ```
 
-## Step 4 – Final Output with Provenance
+### Step 4 – Final Output with Provenance
 
-### Endpoint:
+#### Endpoint:
 POST /extract/final
 
-### Response
+#### Response
 ```json
 {
   "currency": "INR",
