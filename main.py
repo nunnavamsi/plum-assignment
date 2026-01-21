@@ -7,7 +7,7 @@ from llm_validator import filter_monetary_amounts, validate_amounts
 
 app = FastAPI(
     title="AI-Powered Amount Detection in Medical Documents",
-    version="3.1.0"
+    version="FINAL"
 )
 
 # =========================
@@ -48,85 +48,52 @@ def normalize_text(text: str) -> tuple[str, float]:
     if total_chars == 0:
         confidence = 0.0
     else:
-        penalty = corrections / total_chars
-        raw_confidence = max(0.5, 1.0 - penalty)
-        confidence = round(min(raw_confidence, 0.82), 2)
+        confidence = round(min(max(0.5, 1.0 - corrections / total_chars), 0.82), 2)
 
     return normalized_text, confidence
 
 
 # =========================
-# STEP 1 – RAW TOKEN EXTRACTION (FIXED)
+# STEP 1 — RAW TOKEN EXTRACTION
 # =========================
 def extract_raw_tokens(text: str):
-    # Extract candidates like 1200, 1000, 200, 10%
-    candidates = re.findall(r"\d{2,}%?", text)
-
-    raw_tokens = []
-    for token in candidates:
-        if token.endswith("%"):
-            raw_tokens.append(token)
-        else:
-            value = int(token)
-            if value >= 50:   # remove OCR garbage like 0, 1
-                raw_tokens.append(token)
-
+    tokens = re.findall(r"\d{2,}%?", text)
+    tokens = [t for t in tokens if t.endswith("%") or int(t) >= 50]
     currency = "INR" if "INR" in text or "Rs" in text else None
-    return raw_tokens, currency
+    return tokens, currency
 
 
-def step1_confidence(raw_tokens: list[str]) -> float:
-    if not raw_tokens:
+def step1_confidence(tokens: list[str]) -> float:
+    if not tokens:
         return 0.0
-    if any(t.endswith("%") for t in raw_tokens):
-        return 0.74
-    return 0.70
+    return 0.74 if any(t.endswith("%") for t in tokens) else 0.70
 
 
 # =========================
 # NUMERIC NORMALIZATION
 # =========================
 def extract_numeric_amounts(tokens: list[str]) -> list[int]:
-    amounts = []
-    for token in tokens:
-        if "%" in token:
-            continue
-        value = int(token)
-        if value < 50:
-            continue
-        amounts.append(value)
-    return sorted(amounts, reverse=True)
+    return sorted(
+        [int(t) for t in tokens if "%" not in t and int(t) >= 50],
+        reverse=True
+    )
 
 
 # =========================
-# HELPERS FOR FINAL STEP
+# TOTAL INFERENCE (NO SOURCE)
 # =========================
-def clean_provenance_text(text: str) -> str:
-    replacements = {
-        "T0ta1": "Total",
-        "T0tal": "Total",
-        "1NR": "INR",
-        "Rs": "INR",
-        "Pald": "Paid",
-        "Disc0unt": "Discount"
-    }
-    for k, v in replacements.items():
-        text = text.replace(k, v)
-    return text.strip()
+def infer_total_if_missing(items: list[dict]) -> list[dict]:
+    has_total = any(i["type"] == "total_bill" for i in items)
+    paid = next((i for i in items if i["type"] == "paid"), None)
+    due = next((i for i in items if i["type"] == "due"), None)
 
+    if not has_total and paid and due:
+        items.insert(0, {
+            "type": "total_bill",
+            "value": paid["value"] + due["value"]
+        })
 
-def split_into_logical_lines(text: str) -> list[str]:
-    keywords = ["total", "paid", "due", "discount"]
-    parts = []
-    lower = text.lower()
-    indices = [(lower.find(k), k) for k in keywords if lower.find(k) != -1]
-    indices.sort()
-
-    for i, (start, _) in enumerate(indices):
-        end = indices[i + 1][0] if i + 1 < len(indices) else len(text)
-        parts.append(text[start:end].strip())
-
-    return parts
+    return items
 
 
 # =========================
@@ -138,67 +105,62 @@ def home():
 
 
 # -------------------------------------------------
-# STEP 1 — OCR / TEXT EXTRACTION (CORRECT)
+# STEP 1
 # -------------------------------------------------
 @app.post("/extract/text")
 def extract_text(data: TextInput):
-    normalized_text, _ = normalize_text(data.text)
-    raw_tokens, currency = extract_raw_tokens(normalized_text)
+    text, _ = normalize_text(data.text)
+    tokens, currency = extract_raw_tokens(text)
 
-    guardrail = check_guardrails(normalized_text, raw_tokens)
+    guardrail = check_guardrails(text, tokens)
     if guardrail:
         return guardrail
 
     return {
-        "raw_tokens": raw_tokens,
+        "raw_tokens": tokens,
         "currency_hint": currency,
-        "confidence": step1_confidence(raw_tokens)
+        "confidence": step1_confidence(tokens)
     }
 
 
 # -------------------------------------------------
-# STEP 2 — NORMALIZATION
+# STEP 2
 # -------------------------------------------------
 @app.post("/extract/normalized")
 def extract_normalized(data: TextInput):
-    normalized_text, normalization_confidence = normalize_text(data.text)
-    raw_tokens, _ = extract_raw_tokens(normalized_text)
+    text, conf = normalize_text(data.text)
+    tokens, _ = extract_raw_tokens(text)
 
-    guardrail = check_guardrails(normalized_text, raw_tokens)
+    guardrail = check_guardrails(text, tokens)
     if guardrail:
         return guardrail
 
-    normalized_amounts = extract_numeric_amounts(raw_tokens)
-
     return {
-        "normalized_amounts": normalized_amounts,
-        "normalization_confidence": normalization_confidence
+        "normalized_amounts": extract_numeric_amounts(tokens),
+        "normalization_confidence": conf
     }
 
 
 # -------------------------------------------------
-# STEP 3 — CLASSIFICATION
+# STEP 3 — CLASSIFICATION (NO SOURCE ANYWHERE)
 # -------------------------------------------------
 @app.post("/extract/classified")
 def extract_classified(data: TextInput):
-    normalized_text, _ = normalize_text(data.text)
-    raw_tokens, _ = extract_raw_tokens(normalized_text)
+    text, _ = normalize_text(data.text)
+    tokens, _ = extract_raw_tokens(text)
 
-    guardrail = check_guardrails(normalized_text, raw_tokens)
+    guardrail = check_guardrails(text, tokens)
     if guardrail:
         return guardrail
 
-    normalized_amounts = extract_numeric_amounts(raw_tokens)
-    filtered = filter_monetary_amounts(normalized_text, normalized_amounts)
+    nums = extract_numeric_amounts(tokens)
+    filtered = filter_monetary_amounts(text, nums)
     approval = validate_amounts(filtered.get("amounts", []))
 
     if not approval.get("approved"):
-        return {
-            "status": "no_amounts_found",
-            "reason": "validation failed"
-        }
+        return {"status": "no_amounts_found", "reason": "validation failed"}
 
-    amounts = []
+    labels = []
     for item in filtered.get("amounts", []):
         reason = item["reason"].lower()
         if "total" in reason:
@@ -210,67 +172,56 @@ def extract_classified(data: TextInput):
         else:
             continue
 
-        amounts.append({
+        labels.append({
             "type": t,
             "value": int(item["value"])
         })
 
+    labels = infer_total_if_missing(labels)
+
     return {
-        "amounts": amounts,
+        "amounts": labels,
         "confidence": approval.get("confidence", 0.80)
     }
 
 
 # -------------------------------------------------
-# STEP 4 — FINAL OUTPUT
+# STEP 4 — FINAL OUTPUT (NO SOURCE ANYWHERE)
 # -------------------------------------------------
 @app.post("/extract/final")
 def extract_final(data: TextInput):
-    normalized_text, _ = normalize_text(data.text)
-    raw_tokens, currency = extract_raw_tokens(normalized_text)
+    text, _ = normalize_text(data.text)
+    tokens, currency = extract_raw_tokens(text)
 
-    guardrail = check_guardrails(normalized_text, raw_tokens)
+    guardrail = check_guardrails(text, tokens)
     if guardrail:
         return guardrail
 
-    normalized_amounts = extract_numeric_amounts(raw_tokens)
-    filtered = filter_monetary_amounts(normalized_text, normalized_amounts)
+    nums = extract_numeric_amounts(tokens)
+    filtered = filter_monetary_amounts(text, nums)
     approval = validate_amounts(filtered.get("amounts", []))
 
     if not approval.get("approved"):
-        return {
-            "status": "no_amounts_found",
-            "reason": "validation failed"
-        }
+        return {"status": "no_amounts_found", "reason": "validation failed"}
 
-    parts = split_into_logical_lines(normalized_text)
     labels = []
-
     for item in filtered.get("amounts", []):
-        value = int(item["value"])
         reason = item["reason"].lower()
-
         if "total" in reason:
-            label, keyword = "total_bill", "total"
+            t = "total_bill"
         elif "paid" in reason:
-            label, keyword = "paid", "paid"
+            t = "paid"
         elif "due" in reason:
-            label, keyword = "due", "due"
+            t = "due"
         else:
             continue
 
-        source_line = next(
-            (p for p in parts if keyword in p.lower() and str(value) in p),
-            f"{label.capitalize()}: {value}"
-        )
-
-        source_line = clean_provenance_text(source_line)
-
         labels.append({
-            "type": label,
-            "value": value,
-            "source": f"text: '{source_line}'"
+            "type": t,
+            "value": int(item["value"])
         })
+
+    labels = infer_total_if_missing(labels)
 
     order = {"total_bill": 0, "paid": 1, "due": 2}
     labels.sort(key=lambda x: order[x["type"]])
