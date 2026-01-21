@@ -71,7 +71,6 @@ Step 2	POST /extract/normalized	OCR correction & numeric normalization
 Step 3	POST /extract/classified	Context-based classification
 Step 4	POST /extract/final	      Final structured output with provenance
 
----
 
 ## Step 1 – OCR / Text Extraction
 ### Endpoint:
@@ -162,11 +161,11 @@ If the document is empty or too noisy:
 ### Run Locally
 
 Install dependencies:
-```json
+```bash
 pip install fastapi uvicorn
 ```
 Start the server:
-```json
+```bash
 uvicorn main:app --reload
 ```
 Open Swagger UI:
@@ -176,7 +175,7 @@ http://127.0.0.1:8000/docs
 ---
 
 ## Sample cURL Request
-```json
+```text
 curl -X POST http://127.0.0.1:8000/extract/text \
 -H "Content-Type: application/json" \
 -d '{"text":"Total INR 1200 Paid 1000 Due 200"}'
