@@ -70,15 +70,15 @@ http://127.0.0.1:8000/docs
 The system follows a simple step-by-step processing pipeline:
 ```text
 Input (Text / Image)
-↓
+        ↓
 Shared Guardrails Layer
-↓
+        ↓
 Numeric Extraction Module
-↓
+        ↓
 AI Reasoning (FILTER)
-↓
+        ↓
 AI Validation (APPROVE)
-↓
+        ↓
 Structured JSON Output
 ```
 This modular pipeline makes the logic easy to extend and validate.
@@ -141,6 +141,7 @@ Expected Response:
 }
 ```
 ---
+
 
 
 
